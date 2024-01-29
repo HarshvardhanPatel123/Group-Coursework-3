@@ -1,1 +1,35 @@
+#Question 2
+#Part i
 
+ann.loan <- function(type, n, x, i, p ) {
+  if (n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
+    stop("The length of the annuity must have a maximum of 25 years and be an integer!")
+  }
+  if (x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
+    stop("The total annual payment/toal loan amount to be repaid cannot be negative!")
+  }
+  if (i <= 0 || i >= 1) { # Interest rate on the loan
+    stop("Interest rate must be inputted as a decimal number between 0 and 1!")
+  }
+  if (!(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
+    stop("Number of payments payable annually must be monthly, every 2 months, quarterly, every 4 months, half-yearly or once per year. \n  Hence, please input 12, 6, 4, 3, 2 or 1 respectively")
+  }
+  rate <- i / p # The rate per period
+  total_periods <- n * p # The total period
+  
+  if (type == "ann") { # Annuity calculation
+    present_value <- x * ((1 - (1 + rate)^(-total_periods)) / rate) 
+    return(present_value)
+  } else if (type == "loan") { # Loan calculation
+    payment_per_period <- x * (rate / (1 - (1 + rate)^(-total_periods)))
+    total_annual_payment <- payment_per_period * p
+    return(total_annual_payment)
+  } else {
+    stop("Invalid type! Enter 'ann' or 'loan'.")
+  }
+}
+
+test_ann <- ann.loan("ann", 25, 1500, 0.2, 6) # Annuity with total annual payment of 1200
+print (test_ann)
+test_loan <- ann.loan("loan", 7, 2700, 0.056, 1) # Loan of 10000 to be repaid
+print(test_loan)
