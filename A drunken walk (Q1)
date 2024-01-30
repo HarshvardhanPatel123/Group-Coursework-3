@@ -1,1 +1,36 @@
+# Question 1
+
+# Genetate Function
+generate <- function(steps, sims) {
+  # Validate the input
+  if (!is.integer(steps) || !is.integer(sims) || steps > 200 || sims > 1000) {
+    print("Invalid input. 'steps' must be an integer ≤ 200 and 'sims' must be an integer ≤ 1000.")
+    return(NULL)
+  }
+  
+  # Read probabilities from CSV file
+  setwd("/Users/nath/Documents/Python R and Data Structures") # Please change the working directory
+  probabilities <- read.csv("probabilities.csv", row.names = 1)
+  
+  # Simulation function
+  simulate_walk <- function(steps, probabilities) {
+    # Initialize starting position
+    position <- 5
+    walk_matrix <- matrix(0, nrow = steps, ncol = 9)
+    walk_matrix[1, position] <- 1
+    
+    # Simulate the walk
+    for (step in 2:steps) {
+      move <- sample(1:9, 1, prob = probabilities[, position])
+      position <- move
+      walk_matrix[step, position] <- 1
+    }
+    return(walk_matrix)
+  }
+  
+  # Generate simulations
+  simulations <- lapply(1:sims, function(x) simulate_walk(steps, probabilities))
+  
+  return(simulations)
+}
 
