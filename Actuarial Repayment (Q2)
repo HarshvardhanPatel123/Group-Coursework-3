@@ -5,13 +5,13 @@ ann.loan <- function(type, n, x, i, p ) {
   if (!is.numeric(n) || is.na(n) || n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
     stop("The length of the annuity must have a maximum of 25 years and be an integer!")
   }
-  if (!is.numeric(n) || is.na(n) || x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
+  if (!is.numeric(x) || is.na(x) || x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
     stop("The total annual payment/total loan amount to be repaid cannot be negative!")
   }
-  if (!is.numeric(n) || is.na(n) || i <= 0 || i >= 1) { # Interest rate on the loan
+  if (!is.numeric(i) || is.na(i) || i <= 0 || i >= 1) { # Interest rate on the loan
     stop("Interest rate must be inputted as a decimal number between 0 and 1!")
   }
-  if (!is.numeric(n) || is.na(n) || !(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
+  if (!is.numeric(i) || is.na(i) || !(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
     stop("Number of payments payable annually must be monthly, every 2 months, quarterly, every 4 months, half-yearly or once per year. \n  Hence, please input 12, 6, 4, 3, 2 or 1 respectively")
   }
   rate <- i / p # The rate per period
@@ -52,20 +52,20 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
       current_result <- ann.loan(type, policyholder_file$n[row], policyholder_file$x[row], policyholder_file$i[row], policyholder_file$p[row]) 
       # current_result stores the appropriate value for each input into the function
       
-        row_result <- cbind(policyholder_file[row, ], Result = current_result) # Appending the result of the ann.loan function to the correct data frame
+      row_result <- cbind(policyholder_file[row, ], Result = current_result) # Appending the result of the ann.loan function to the correct data frame
       
       if (type =="ann") { # If statement important for choosing correct data frame
         annuities_results <- rbind(annuities_results, row_result)
       } else {
         loans_results <- rbind(loans_results, row_result)
       }
-    }, error_info = function(e) { # Even if the function isn't called, R requires something to occur when the tryCatch encounters an error. Perhaps a user could use the function to collect error information?
+    }, error = function(e) { # Even if the function isn't called, R requires something to occur when the tryCatch encounters an error. Perhaps a user could use the function to collect error information?
       errors <- rbind(errors, policyholder_file[row, ]) # The errors are appended to the errors data frame
     })
   }
   
-  annuities_results <- rbind(annuities_results[order(annuities_results$surname), ], errors[errors$type == 1, ]) # The surname is the sorting factor here, and the data frames are rearranged
-  loans_results <- rbind(loans_results[order(loans_results$surname), ], errors[errors$type == 2, ]) # Further rearrangement of the data frame includes the error data frame being appended to the bottom
+  annuities_results <- rbind(annuities_results[order(annuities_results$Surname), ], errors[errors$type == 1, ]) # The surname is the sorting factor here, and the data frames are rearranged
+  loans_results <- rbind(loans_results[order(loans_results$Surname), ], errors[errors$type == 2, ]) # Further rearrangement of the data frame includes the error data frame being appended to the bottom
   
   write.csv(annuities_results, "Annuities_Return.csv", row.names = FALSE) # R function write.csv is used to append the data frames to a CSV file
   write.csv(loans_results, "Loans_Return.csv", row.names = FALSE) # row.names = FALSE is designed to remove the row names, and only print the columns with the original output and results
