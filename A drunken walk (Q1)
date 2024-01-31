@@ -1,36 +1,117 @@
 # Question 1
 
-# Genetate Function
+# Set the working directory to the folder containing the probabilities.csv file
+setwd("/Users/nath/Documents/Python R and Data Structures")
+# The probabilities.csv file is loaded in as this matrix will dictate the random walk behaviour in the simulation
+probabilities <- read.csv("probabilities.csv", row.names = 1)
+
+# The "generate" function is made to simulate random walks based on the provided probabilities
+# The "steps" define the number of steps in each simulation and "sims" is the number of simulations to run
 generate <- function(steps, sims) {
-  # Validate the input
-  if (!is.integer(steps) || !is.integer(sims) || steps > 200 || sims > 1000) {
-    print("Invalid input. 'steps' must be an integer ≤ 200 and 'sims' must be an integer ≤ 1000.")
-    return(NULL)
+  # Validate input to ensure they are positive integers withtin the specified limits
+  if (!is.integer(steps) || steps <= 0 || steps > 200 || 
+      !is.integer(sims) || sims <= 0 || sims > 1000) {
+    stop("Invalid input: 'steps' and 'sims' must be positive integers with 'steps' ≤ 200 and 'sims' ≤ 1000.")
   }
   
-  # Read probabilities from CSV file
-  setwd("/Users/nath/Documents/Python R and Data Structures") # Please change the working directory
+  # Re-read probabilities to ensure latest data is used
   probabilities <- read.csv("probabilities.csv", row.names = 1)
   
-  # Simulation function
+  # Ensure the probabilities matrix has 9 columns
+  if (ncol(probabilities) != 9) {
+    stop("Probabilities matrix must have 9 columns.")
+  }
+  
+  # An internal function is defined to simulate a single random walk
   simulate_walk <- function(steps, probabilities) {
-    # Initialize starting position
-    position <- 5
+    # A mapping of movement labels is created to row indicies for easy access
+    label_to_index <- setNames(1:nrow(probabilities), rownames(probabilities))
+    
+    # Initialize starting position, denoted by "SF" in the probabilities matrix
+    position <- label_to_index["SF"]
     walk_matrix <- matrix(0, nrow = steps, ncol = 9)
-    walk_matrix[1, position] <- 1
+    walk_matrix[1, 5] <- 1  # Starts in the middle lane which is lane 5, marked with a 1
     
     # Simulate the walk
     for (step in 2:steps) {
-      move <- sample(1:9, 1, prob = probabilities[, position])
-      position <- move
-      walk_matrix[step, position] <- 1
+      # The probability vector for the current position is retreived
+      current_prob <- probabilities[position, ]
+      
+      # The simulation is paused if there are any "NA" values, which would indicate an error in the data
+      if (any(is.na(current_prob))) {
+        stop("NA values found in probability vector for position ", position)
+      }
+      
+      # The next lane is randomly chosen based on the probabilities, simulating the walk
+      move <- sample(1:9, 1, prob = current_prob)
+      
+      # The new position label based on the move is determined
+      if (move <= 3) {
+        new_position <- paste("L", 4 - move, sep="")  # Moves to the left
+      } else if (move == 4 || move == 5 || move == 6) {
+        new_position <- "SF"  # Stays in the centre
+      } else if (move >= 7) {
+        new_position <- paste("R", move - 6, sep="")  # Moves to the right
+      } else {
+        stop("Unexpected move value: ", move)
+      }
+      
+      # Checks if the new position is valid, if not, halts the simulation 
+      print(paste("Move:", move, "New Position:", new_position))
+      
+      position <- label_to_index[new_position]
+      if (is.na(position)) {
+        stop("Invalid move to position label: ", new_position)
+      }
+      # Updates the walk matrix to reflect the next move
+      walk_matrix[step, move] <- 1
     }
     return(walk_matrix)
   }
   
-  # Generate simulations
+  # Set a seed for the random nunmber generator to ensure reproducibility of the simulations
+  set.seed(123)
+  
+  # The specified number of simulations is generated using a list apply function for efficiency
   simulations <- lapply(1:sims, function(x) simulate_walk(steps, probabilities))
   
   return(simulations)
 }
 
+# The "sim.analysis" function is made to analyse the results of the simulations
+sim.analysis <- function(simulations) {
+  # Checks if simulations list is not empty
+  if (length(simulations) == 0) {
+    stop("Simulation results are empty.")
+  }
+  
+  # The sum across all simulations is calculated to get the total occurrences in each lane at each step
+  total_observation <- Reduce(`+`, simulations)
+  
+  # The means and standard deviations for the lane positions at each step is calculated
+  means <- colMeans(total_observation)
+  sds <- apply(total_observation, 2, sd)
+  
+  # Aggregated data is combined with the computed statistics into one matrix
+  analysis_matrix <- rbind(total_observation, Mean = means, SD = sds)
+  
+  # Data is saved into a csv file
+  write.csv(analysis_matrix, "outcomes.csv", row.names = FALSE)
+  
+  # Summary analysis
+  # Every 10th step for trends and patterns is analysed, and the dinal step for endpoint analysis
+  summary_steps <- seq(10, nrow(simulations[[1]]), by = 10)
+  summary_matrix <- sapply(summary_steps, function(step) {
+    step_data <- sapply(simulations, function(sim) sim[step,])
+    mean_lane <- max.col(step_data)
+    # The mean and standard deviation for each step is calculated and returned
+    c(Mean = mean(mean_lane), SD = sd(mean_lane))
+  })
+  
+  # The step-focused summary is outputed to another csv file
+  write.csv(t(summary_matrix), "summary.csv", row.names = FALSE)
+}
+
+# The simulation and analysis of the simulation is generated with given parameters
+simulation_results <- generate(as.integer(100), as.integer(10))
+sim.analysis(simulation_results)
