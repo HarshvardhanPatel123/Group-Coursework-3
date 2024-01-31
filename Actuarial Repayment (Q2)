@@ -2,16 +2,16 @@
 #Part i
 
 ann.loan <- function(type, n, x, i, p ) {
-  if (n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
+  if (!is.numeric(n) || is.na(n) || n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
     stop("The length of the annuity must have a maximum of 25 years and be an integer!")
   }
-  if (x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
-    stop("The total annual payment/toal loan amount to be repaid cannot be negative!")
+  if (!is.numeric(n) || is.na(n) || x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
+    stop("The total annual payment/total loan amount to be repaid cannot be negative!")
   }
-  if (i <= 0 || i >= 1) { # Interest rate on the loan
+  if (!is.numeric(n) || is.na(n) || i <= 0 || i >= 1) { # Interest rate on the loan
     stop("Interest rate must be inputted as a decimal number between 0 and 1!")
   }
-  if (!(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
+  if (!is.numeric(n) || is.na(n) || !(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
     stop("Number of payments payable annually must be monthly, every 2 months, quarterly, every 4 months, half-yearly or once per year. \n  Hence, please input 12, 6, 4, 3, 2 or 1 respectively")
   }
   rate <- i / p # The rate per period
@@ -29,21 +29,17 @@ ann.loan <- function(type, n, x, i, p ) {
   }
 }
 
-test_ann <- ann.loan("ann", 25, 1500, 0.2, 6) # Annuity with total annual payment of 1200
-print (test_ann)
-test_loan <- ann.loan("loan", 7, 2700, 0.056, 1) # Loan of 10000 to be repaid
-print(test_loan)
-
-
 #Part ii
 
-analyse.policies <- function(file_path){ # The file path is decided by the user, thus will be involved in calling the function 
-  policy_file <- "Path.csv" # File names decided for the user to alter later
-  annuities_output <- "Annuities_Return.csv"
-  loans_output <- "Loans_Return.csv"
-  summary_output <- "Summary_Stats.csv"
-  
-  policyholder_file <- read.csv(file_path) # Reading the file using the csv function
+# For writing the file path, make sure you type // instead of / due to implications with R programming
+policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv" # This file path should be edited by the user
+annuities_output <- "Annuities_Return.csv"
+loans_output <- "Loans_Return.csv"
+summary_output <- "Summary_Stats.csv"
+
+analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
+  # Reading the file using the csv function
+  policyholder_file <- read.csv(policy.file)
   
   # Data frames are used to make it simple to access and utilize data within R
   annuities_results <- data.frame()
@@ -53,23 +49,19 @@ analyse.policies <- function(file_path){ # The file path is decided by the user,
   for (row in 1:nrow(policyholder_file)) {
     tryCatch({ # Try catch is a loop which decides where the result of each person (row) is stored in which data frame, but also for spotting errors and placing them in a seperate data frame
       type <- ifelse(policyholder_file$type[row] == 1, "ann", "loan") # Adhering to the code word given, 1 is for annuity and 2 is for loan
-      n <- policyholder_file$n[row]
-      x <- policyholder_file$x[row]
-      i <- policyholder_file$i[row]
-      p <- policyholder_file$p[row]
-      # After making the row values in the CSV file temporary variables, we can apply the function to it
-      current_result <- ann.loan(type, n, x, i, p) # This uses the function in part i to gain a result per row
+      current_result <- ann.loan(type, policyholder_file$n[row], policyholder_file$x[row], policyholder_file$i[row], policyholder_file$p[row]) 
+      # current_result stores the appropriate value for each input into the function
       
-      row_result <- cbind(policyholder_file[row, ], Result <- current_result) # Appending the result of the ann.loan function to the correct data frame
+        row_result <- cbind(policyholder_file[row, ], Result = current_result) # Appending the result of the ann.loan function to the correct data frame
       
       if (type =="ann") { # If statement important for choosing correct data frame
         annuities_results <- rbind(annuities_results, row_result)
       } else {
         loans_results <- rbind(loans_results, row_result)
       }
-    }, 
+    }, error_info = function(e) { # Even if the function isn't called, R requires something to occur when the tryCatch encounters an error. Perhaps a user could use the function to collect error information?
       errors <- rbind(errors, policyholder_file[row, ]) # The errors are appended to the errors data frame
-    )
+    })
   }
   
   annuities_results <- rbind(annuities_results[order(annuities_results$surname), ], errors[errors$type == 1, ]) # The surname is the sorting factor here, and the data frames are rearranged
@@ -77,3 +69,17 @@ analyse.policies <- function(file_path){ # The file path is decided by the user,
   
   write.csv(annuities_results, "Annuities_Return.csv", row.names = FALSE) # R function write.csv is used to append the data frames to a CSV file
   write.csv(loans_results, "Loans_Return.csv", row.names = FALSE) # row.names = FALSE is designed to remove the row names, and only print the columns with the original output and results
+  
+  annuities_summary <- aggregate(Result ~ Gender, data = annuities_results, FUN = function(x) c(Mean = mean(x), SD = sd(x)))
+  loans_summary <- aggregate(Result ~ Gender, data = loans_results, FUN = function(y) c(Mean = mean(y), SD = sd(y)))
+  # The code above uses the R function "aggregate" to generate the necessary statistics for the two products but broken down by gender
+  
+  summary_combined <- rbind(annuities_summary, loans_summary) # Creating a combination of both product's important statistic
+  
+  write.csv(summary_combined, summary_output, row.names = FALSE) # Thus appending the combined summary to the CSV file already created
+  
+  
+} 
+  
+  
+analyse.policies()
