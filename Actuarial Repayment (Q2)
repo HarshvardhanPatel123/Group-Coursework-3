@@ -31,13 +31,17 @@ ann.loan <- function(type, n, x, i, p ) {
 #Part ii
 
 analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
+  # Policy.file should be edited by the user. NOTE: 
   # For writing the file path, make sure you type \\ instead of \ due to implications with R programming
   policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv"
-  # The file path above should be edited by the user
   
-  annuities_output <- "Annuities_Return.csv"
-  loans_output <- "Loans_Return.csv"
-  summary_output <- "Summary_Stats.csv"
+  
+  # Create a path to create the CSV files in the same place as the policy file
+  folder_path <- dirname(policy.file) 
+  annuities_output <- file.path(folder_path, "Annuities_Return.csv")
+  loans_output <- file.path(folder_path, "Loans_Return.csv")
+  summary_output <- file.path(folder_path, "Summary_Stats.csv")
+  
   
   # Reading the file using the csv function
   policyholder_file <- read.csv(policy.file)
@@ -93,7 +97,7 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   # Calculate the mean and standard deviation of the non-error values, broken down by gender
   summary_stats <- aggregate(Result ~ Gender, data = rbind(annuities_results, loans_results), 
                              FUN = function(x) c(mean = mean(as.numeric(x), na.rm = TRUE), 
-                                                 sd = sd(as.numeric(x), na.rm = TRUE)))
+                                                 standard.deviation = sd(as.numeric(x), na.rm = TRUE)))
   
   
   # Create the summary table and thus append it to the CSV file
