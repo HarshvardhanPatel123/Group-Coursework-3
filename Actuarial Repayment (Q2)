@@ -31,55 +31,78 @@ ann.loan <- function(type, n, x, i, p ) {
 
 #Part ii
 
-# For writing the file path, make sure you type // instead of / due to implications with R programming
-policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv" # This file path should be edited by the user
-annuities_output <- "Annuities_Return.csv"
-loans_output <- "Loans_Return.csv"
-summary_output <- "Summary_Stats.csv"
-
 analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
+  # For writing the file path, make sure you type \\ instead of \ due to implications with R programming
+  policy.file <- "C:\\Users\\poona\\Downloads\\policyholders (1).csv"
+  # The file path above should be edited by the user
+  
+  annuities_output <- "Annuities_Return.csv"
+  loans_output <- "Loans_Return.csv"
+  summary_output <- "Summary_Stats.csv"
+  
   # Reading the file using the csv function
   policyholder_file <- read.csv(policy.file)
   
-  # Data frames are used to make it simple to access and utilize data within R
-  annuities_results <- data.frame()
-  loans_results <- data.frame()
-  errors <- data.frame() # This is an extra data frame which will later be appended to the bottom of the respective table
+  # Generating 3 lists which will later be appended to the CSV files
+  annuities_results <- list()
+  loans_results <- list()
+  errors <- list()
   
-  for (row in 1:nrow(policyholder_file)) {
-    tryCatch({ # Try catch is a loop which decides where the result of each person (row) is stored in which data frame, but also for spotting errors and placing them in a seperate data frame
-      type <- ifelse(policyholder_file$type[row] == 1, "ann", "loan") # Adhering to the code word given, 1 is for annuity and 2 is for loan
-      current_result <- ann.loan(type, policyholder_file$n[row], policyholder_file$x[row], policyholder_file$i[row], policyholder_file$p[row]) 
-      # current_result stores the appropriate value for each input into the function
-      
-      row_result <- cbind(policyholder_file[row, ], Result = current_result) # Appending the result of the ann.loan function to the correct data frame
-      
-      if (type =="ann") { # If statement important for choosing correct data frame
+  for (row in seq_len(nrow(policyholder_file))) { # For loop using seq_len to increment variable "row" through values 1 to n. More robust than 1:n in case of empty column
+    policy <- policyholder_file[row, ]
+    type <- ifelse(policy$type == 1, "ann", "loan") # Adhering to the code 1 for Annuity and 2 for Loan
+    
+    # Append all row values of respective columns to the variable result after performing ann.loan function on them
+    result <- try(ann.loan(type, policyholder_file$n[row], policyholder_file$x[row], policyholder_file$i[row], policyholder_file$p[row]))
+    # The try function is utilised for error handling, as follows
+    
+    if (class(result) == "try-error") { # If statement if there is an error
+      error_row <- cbind(policy, Result = NA) # cbind combines data horizontally by columns
+      errors <- rbind(errors, error_row) # rbind combines data vertically by rows
+    } else {
+      row_result <- cbind(policy, Result = result)
+      if (type == "ann") { # Sorting the result of each row into their respective lists
         annuities_results <- rbind(annuities_results, row_result)
       } else {
         loans_results <- rbind(loans_results, row_result)
       }
-    }, error = function(e) { # Even if the function isn't called, R requires something to occur when the tryCatch encounters an error. Perhaps a user could use the function to collect error information?
-      errors <- rbind(errors, policyholder_file[row, ]) # The errors are appended to the errors data frame
-    })
+    }
   }
+  # After lists have been filled, convert to data frames
+  annuities_results <- as.data.frame(annuities_results)
+  loans_results <- as.data.frame(loans_results)
+  errors <- as.data.frame(errors)
   
-  annuities_results <- rbind(annuities_results[order(annuities_results$Surname), ], errors[errors$type == 1, ]) # The surname is the sorting factor here, and the data frames are rearranged
-  loans_results <- rbind(loans_results[order(loans_results$Surname), ], errors[errors$type == 2, ]) # Further rearrangement of the data frame includes the error data frame being appended to the bottom
+  # As per user request, order the data frames by Surname
+  annuities_results <- annuities_results[order(annuities_results$Surname), ]
+  loans_results <- loans_results[order(loans_results$Surname), ]
   
-  write.csv(annuities_results, "Annuities_Return.csv", row.names = FALSE) # R function write.csv is used to append the data frames to a CSV file
-  write.csv(loans_results, "Loans_Return.csv", row.names = FALSE) # row.names = FALSE is designed to remove the row names, and only print the columns with the original output and results
+  # Append errors at the bottom of the respective data frames
+  errors$type <- ifelse(errors$type == 1, "ann", "loan")
+  annuities_errors <- errors[errors$type == "ann", ]
+  loans_errors <- errors[errors$type == "loan", ]
+  annuities_results <- rbind(annuities_results, annuities_errors)
+  loans_results <- rbind(loans_results, loans_errors)
   
-  annuities_summary <- aggregate(Result ~ Gender, data = annuities_results, FUN = function(x) c(Mean = mean(x), SD = sd(x)))
-  loans_summary <- aggregate(Result ~ Gender, data = loans_results, FUN = function(y) c(Mean = mean(y), SD = sd(y)))
-  # The code above uses the R function "aggregate" to generate the necessary statistics for the two products but broken down by gender
+  # Finally, transfer from data frame to the first 2 CSV files created earlier
+  write.csv(annuities_results, annuities_output, row.names = FALSE)
+  write.csv(loans_results, loans_output, row.names = FALSE)
   
-  summary_combined <- rbind(annuities_summary, loans_summary) # Creating a combination of both product's important statistic
+  # Calculate the mean and standard deviation of the non-error values
+  annuities_summary <- aggregate(Result ~ Gender, data = annuities_results, FUN = function(x) c(Mean = mean(x, na.rm = TRUE), SD = sd(x, na.rm = TRUE)))
+  loans_summary <- aggregate(Result ~ Gender, data = loans_results, FUN = function(x) c(Mean = mean(x, na.rm = TRUE), SD = sd(x, na.rm = TRUE)))
   
-  write.csv(summary_combined, summary_output, row.names = FALSE) # Thus appending the combined summary to the CSV file already created
+  # Present the summary table neatly
+  annuities_summary$Stats <- sapply(annuities_summary$Result, function(x) paste("Mean:", x[1], "SD:", x[2]))
+  loans_summary$Stats <- sapply(loans_summary$Result, function(x) paste("Mean:", x[1], "SD:", x[2]))
+  annuities_summary$Result <- NULL
+  loans_summary$Result <- NULL
   
+  # Create the summary table and thus append it to the CSV file
+  summary_combined <- rbind(annuities_summary, loans_summary)
+  write.csv(summary_combined, summary_output, row.names = FALSE)
   
-} 
-  
-  
+}
+
+
 analyse.policies()
