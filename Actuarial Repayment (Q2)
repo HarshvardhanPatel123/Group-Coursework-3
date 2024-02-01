@@ -3,37 +3,36 @@
 
 ann.loan <- function(type, n, x, i, p ) {
   if (!is.numeric(n) || is.na(n) || n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
-    stop("The length of the annuity must have a maximum of 25 years and be an integer!")
+    return("ERROR")
   }
   if (!is.numeric(x) || is.na(x) || x <= 0) { # The total annual payment, will be separate into payment intervals at the choice of the user
-    stop("The total annual payment/total loan amount to be repaid cannot be negative!")
+    return("ERROR")
   }
   if (!is.numeric(i) || is.na(i) || i <= 0 || i >= 1) { # Interest rate on the loan
-    stop("Interest rate must be inputted as a decimal number between 0 and 1!")
+    return("ERROR")
   }
-  if (!is.numeric(i) || is.na(i) || !(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
-    stop("Number of payments payable annually must be monthly, every 2 months, quarterly, every 4 months, half-yearly or once per year. \n  Hence, please input 12, 6, 4, 3, 2 or 1 respectively")
+  if (!is.numeric(p) || is.na(p) || !(p %in% c(1, 2, 3, 4, 6, 12))) { # The number of annual payments contributing to the annuity or the loan repayment
+    return("ERROR")
   }
   rate <- i / p # The rate per period
   total_periods <- n * p # The total period
   
   if (type == "ann") { # Annuity calculation
-    present_value <- x * ((1 - (1 + rate)^(-total_periods)) / rate) 
+    present_value <- x * ((1 - (1 + rate)^(-total_periods)) / rate) # PV formula = ( 1 - v^n ) / i where v = 1/( 1 + i )
     return(present_value)
   } else if (type == "loan") { # Loan calculation
-    payment_per_period <- x * (rate / (1 - (1 + rate)^(-total_periods)))
+    payment_per_period <- x * (rate / (1 - (1 + rate)^(-total_periods))) 
     total_annual_payment <- payment_per_period * p
     return(total_annual_payment)
-  } else {
-    stop("Invalid type! Enter 'ann' or 'loan'.")
-  }
+  } 
 }
+
 
 #Part ii
 
 analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
   # For writing the file path, make sure you type \\ instead of \ due to implications with R programming
-  policy.file <- "C:\\Users\\poona\\Downloads\\policyholders (1).csv"
+  policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv"
   # The file path above should be edited by the user
   
   annuities_output <- "Annuities_Return.csv"
@@ -49,25 +48,26 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   errors <- list()
   
   for (row in seq_len(nrow(policyholder_file))) { # For loop using seq_len to increment variable "row" through values 1 to n. More robust than 1:n in case of empty column
-    policy <- policyholder_file[row, ]
+    policy <- policyholder_file[row, ] # Extracting of single row and replacing it with a variable for readability
     type <- ifelse(policy$type == 1, "ann", "loan") # Adhering to the code 1 for Annuity and 2 for Loan
     
     # Append all row values of respective columns to the variable result after performing ann.loan function on them
-    result <- try(ann.loan(type, policyholder_file$n[row], policyholder_file$x[row], policyholder_file$i[row], policyholder_file$p[row]))
-    # The try function is utilised for error handling, as follows
+    result <- ann.loan(type, as.numeric(policy$n), as.numeric(policy$x), as.numeric(policy$i), as.numeric(policy$p))
+    # Note that as.numeric is used to ensure data type consistency and no conflict with validation from the ann.loan function
     
-    if (class(result) == "try-error") { # If statement if there is an error
-      error_row <- cbind(policy, Result = NA) # cbind combines data horizontally by columns
-      errors <- rbind(errors, error_row) # rbind combines data vertically by rows
+    if (result == "ERROR") { # If statement to decide which rows are sent to the error list
+      errors <- rbind(errors, cbind(policy, Result = result))
     } else {
-      row_result <- cbind(policy, Result = result)
-      if (type == "ann") { # Sorting the result of each row into their respective lists
+      row_result <- cbind(policy, Result = result) # If not an error, rows sent to appropriate lists depending on whether annuity or loan
+      if (type == "ann") {
         annuities_results <- rbind(annuities_results, row_result)
       } else {
         loans_results <- rbind(loans_results, row_result)
       }
     }
   }
+    
+    
   # After lists have been filled, convert to data frames
   annuities_results <- as.data.frame(annuities_results)
   loans_results <- as.data.frame(loans_results)
@@ -77,30 +77,29 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   annuities_results <- annuities_results[order(annuities_results$Surname), ]
   loans_results <- loans_results[order(loans_results$Surname), ]
   
+  print (annuities_results)
+  print (loans_results)
+  print (errors)
+  
   # Append errors at the bottom of the respective data frames
-  errors$type <- ifelse(errors$type == 1, "ann", "loan")
-  annuities_errors <- errors[errors$type == "ann", ]
-  loans_errors <- errors[errors$type == "loan", ]
+  annuities_errors <- errors[errors$type == 1, ]
+  loans_errors <- errors[errors$type == 2, ]
   annuities_results <- rbind(annuities_results, annuities_errors)
   loans_results <- rbind(loans_results, loans_errors)
+  
+  print(annuities_results)
+  print(loans_results)
   
   # Finally, transfer from data frame to the first 2 CSV files created earlier
   write.csv(annuities_results, annuities_output, row.names = FALSE)
   write.csv(loans_results, loans_output, row.names = FALSE)
   
-  # Calculate the mean and standard deviation of the non-error values
-  annuities_summary <- aggregate(Result ~ Gender, data = annuities_results, FUN = function(x) c(Mean = mean(x, na.rm = TRUE), SD = sd(x, na.rm = TRUE)))
-  loans_summary <- aggregate(Result ~ Gender, data = loans_results, FUN = function(x) c(Mean = mean(x, na.rm = TRUE), SD = sd(x, na.rm = TRUE)))
-  
-  # Present the summary table neatly
-  annuities_summary$Stats <- sapply(annuities_summary$Result, function(x) paste("Mean:", x[1], "SD:", x[2]))
-  loans_summary$Stats <- sapply(loans_summary$Result, function(x) paste("Mean:", x[1], "SD:", x[2]))
-  annuities_summary$Result <- NULL
-  loans_summary$Result <- NULL
+  # Calculate the mean and standard deviation of the non-error values 
+  summary_stats <- aggregate(Result ~ Gender, data = rbind(annuities_results, loans_results), FUN = function(x) c(mean = mean(x, na.rm = TRUE), standard.deviation = sd(x, na.rm = TRUE)))
+  print(summary_stats)
   
   # Create the summary table and thus append it to the CSV file
-  summary_combined <- rbind(annuities_summary, loans_summary)
-  write.csv(summary_combined, summary_output, row.names = FALSE)
+  write.csv(summary_stats, summary_output, row.names = FALSE)
   
 }
 
