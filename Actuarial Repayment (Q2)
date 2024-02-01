@@ -31,12 +31,12 @@ ann.loan <- function(type, n, x, i, p ) {
 #Part ii
 
 analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
-  # Policy.file should be edited by the user. NOTE: 
-  # For writing the file path, make sure you type \\ instead of \ due to implications with R programming
+  # Policy.file should be edited by the user.  
+  # NOTE: For writing the file path, make sure you type \\ instead of \ due to implications with R programming
   policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv"
   
-  
-  # Create a path to create the CSV files in the same place as the policy file
+  # Generate 3 CSV files to be written into later
+  # NOTE: The 3 CSV files will be created in the same location as the original policyholder file
   folder_path <- dirname(policy.file) 
   annuities_output <- file.path(folder_path, "Annuities_Return.csv")
   loans_output <- file.path(folder_path, "Loans_Return.csv")
@@ -87,9 +87,6 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   annuities_results <- rbind(annuities_results, annuities_errors)
   loans_results <- rbind(loans_results, loans_errors)
   
-  print(annuities_results)
-  print(loans_results)
-  
   # Finally, transfer from data frame to the first 2 CSV files created earlier
   write.csv(annuities_results, annuities_output, row.names = FALSE)
   write.csv(loans_results, loans_output, row.names = FALSE)
@@ -107,3 +104,4 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
 
 
 analyse.policies()
+
