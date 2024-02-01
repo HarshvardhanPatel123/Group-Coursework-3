@@ -30,10 +30,10 @@ ann.loan <- function(type, n, x, i, p ) {
 
 #Part ii
 
-analyse.policies <- function(){ # The file path is decided by the user, thus will be involved in calling the function 
-  # Policy.file should be edited by the user.  
+analyse.policies <- function(policy.file){ # The file path is decided by the user, thus will be involved in calling the function 
+  # Policy.file should be edited by the user when calling the function 
   # NOTE: For writing the file path, make sure you type \\ instead of \ due to implications with R programming
-  policy.file <- "C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv"
+  
   
   # Generate 3 CSV files to be written into later
   # NOTE: The 3 CSV files will be created in the same location as the original policyholder file
@@ -103,5 +103,4 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
 }
 
 
-analyse.policies()
-
+analyse.policies("C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv")
