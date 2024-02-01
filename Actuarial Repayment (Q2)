@@ -18,10 +18,10 @@ ann.loan <- function(type, n, x, i, p ) {
   total_periods <- n * p # The total period
   
   if (type == "ann") { # Annuity calculation
-    present_value <- x * ((1 - (1 + rate)^(-total_periods)) / rate) # PV formula = ( 1 - v^n ) / i where v = 1/( 1 + i )
+    present_value <- round(x * ((1 - (1 + rate)^(-total_periods)) / rate), 2) # PV formula = ( 1 - v^n ) / i where v = 1/( 1 + i )
     return(present_value)
   } else if (type == "loan") { # Loan calculation
-    payment_per_period <- x * (rate / (1 - (1 + rate)^(-total_periods))) 
+    payment_per_period <- round(x * (rate / (1 - (1 + rate)^(-total_periods))), 2) 
     total_annual_payment <- payment_per_period * p
     return(total_annual_payment)
   } 
@@ -77,10 +77,6 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   annuities_results <- annuities_results[order(annuities_results$Surname), ]
   loans_results <- loans_results[order(loans_results$Surname), ]
   
-  print (annuities_results)
-  print (loans_results)
-  print (errors)
-  
   # Append errors at the bottom of the respective data frames
   annuities_errors <- errors[errors$type == 1, ]
   loans_errors <- errors[errors$type == 2, ]
@@ -94,9 +90,11 @@ analyse.policies <- function(){ # The file path is decided by the user, thus wil
   write.csv(annuities_results, annuities_output, row.names = FALSE)
   write.csv(loans_results, loans_output, row.names = FALSE)
   
-  # Calculate the mean and standard deviation of the non-error values 
-  summary_stats <- aggregate(Result ~ Gender, data = rbind(annuities_results, loans_results), FUN = function(x) c(mean = mean(x, na.rm = TRUE), standard.deviation = sd(x, na.rm = TRUE)))
-  print(summary_stats)
+  # Calculate the mean and standard deviation of the non-error values, broken down by gender
+  summary_stats <- aggregate(Result ~ Gender, data = rbind(annuities_results, loans_results), 
+                             FUN = function(x) c(mean = mean(as.numeric(x), na.rm = TRUE), 
+                                                 sd = sd(as.numeric(x), na.rm = TRUE)))
+  
   
   # Create the summary table and thus append it to the CSV file
   write.csv(summary_stats, summary_output, row.names = FALSE)
