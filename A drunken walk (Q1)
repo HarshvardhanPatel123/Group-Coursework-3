@@ -8,6 +8,9 @@ probabilities <- read.csv("probabilities.csv", row.names = 1)
 # The "generate" function is made to simulate random walks based on the provided probabilities
 # The "steps" define the number of steps in each simulation and "sims" is the number of simulations to run
 generate <- function(steps, sims) {
+  # Set the values for the number of steps and simulations to integers
+  steps <- as.integer(steps)
+  sims <- as.integer(sims)
   # Validate input to ensure they are positive integers withtin the specified limits
   if (!is.integer(steps) || steps <= 0 || steps > 200 || 
       !is.integer(sims) || sims <= 0 || sims > 1000) {
@@ -113,5 +116,5 @@ sim.analysis <- function(simulations) {
 }
 
 # The simulation and analysis of the simulation is generated with given parameters
-simulation_results <- generate(as.integer(100), as.integer(10))
+simulation_results <- generate(100, 10)
 sim.analysis(simulation_results)
