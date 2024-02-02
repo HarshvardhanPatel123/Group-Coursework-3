@@ -2,6 +2,7 @@
 #Part i
 
 ann.loan <- function(type, n, x, i, p ) {
+  # Input validation involved to find errors in the function, following given parameters from the task and general parameters
   if (!is.numeric(n) || is.na(n) || n < 1 || n > 25 ||  n != as.integer(n)) { # Length of the annuity or the loan repayment
     return("ERROR")
   }
@@ -36,7 +37,7 @@ analyse.policies <- function(policy.file){ # The file path is decided by the use
   
   
   # Generate 3 CSV files to be written into later
-  # NOTE: The 3 CSV files will be created in the same location as the original policyholder file
+  # NOTE: The 3 CSV files will be created/edited in the same location as the original policyholder file
   folder_path <- dirname(policy.file) 
   annuities_output <- file.path(folder_path, "Annuities_Return.csv")
   loans_output <- file.path(folder_path, "Loans_Return.csv")
@@ -72,7 +73,7 @@ analyse.policies <- function(policy.file){ # The file path is decided by the use
   }
     
     
-  # After lists have been filled, convert to data frames
+  # After lists have been filled, convert to data frames for presentation
   annuities_results <- as.data.frame(annuities_results)
   loans_results <- as.data.frame(loans_results)
   errors <- as.data.frame(errors)
@@ -87,7 +88,7 @@ analyse.policies <- function(policy.file){ # The file path is decided by the use
   annuities_results <- rbind(annuities_results, annuities_errors)
   loans_results <- rbind(loans_results, loans_errors)
   
-  # Finally, transfer from data frame to the first 2 CSV files created earlier
+  # Finally, transfer from data frames to the first 2 CSV files created earlier
   write.csv(annuities_results, annuities_output, row.names = FALSE)
   write.csv(loans_results, loans_output, row.names = FALSE)
   
