@@ -32,7 +32,7 @@ ann.loan <- function(type, n, x, i, p ) {
 
 analyse.policies <- function(policy.file){ # The file path is decided by the user, thus will be involved in calling the function 
   # Policy.file should be edited by the user when calling the function 
-  # NOTE: For writing the file path, make sure you type \\ instead of \ due to implications with R programming
+  # NOTE: For writing the file path, make sure you type \\ instead of \ due to conflict with R programming
   
   
   # Generate 3 CSV files to be written into later
@@ -96,11 +96,11 @@ analyse.policies <- function(policy.file){ # The file path is decided by the use
                              FUN = function(x) c(mean = mean(as.numeric(x), na.rm = TRUE), 
                                                  standard.deviation = sd(as.numeric(x), na.rm = TRUE)))
   
-  
   # Create the summary table and thus append it to the CSV file
   write.csv(summary_stats, summary_output, row.names = FALSE)
   
 }
 
-
-analyse.policies("C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv")
+suppressWarnings({ # Since the warnings do not affect the data and the expected output is achieved, it will be suppressed.
+  analyse.policies("C:\\Users\\poona\\OneDrive\\Documents\\R coursework 1 Folder\\Policyholders.csv")
+})
